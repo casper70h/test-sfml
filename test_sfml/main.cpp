@@ -3,6 +3,9 @@
 #include "view.h"
 #include <iostream>
 #include <sstream>
+//#include <conio.h>
+#include <vector>
+#include <list>
 
 using namespace sf;
 
@@ -25,15 +28,22 @@ public:
 		sprite.setTexture(texture);
 		sprite.setOrigin(w / 2, h / 2);
 	}
+
+	FloatRect getRect() {
+		return FloatRect(x, y, w, h);
+	}
+
+	virtual void update(float time) = 0;
 };
 ////////////////////////////////////////////////////КЛАСС ИГРОКА////////////////////////
 class Player :public Entity {
 public:
 	enum { left, right, up, down, jump, stay } state;//добавляем тип перечисления - состояние объекта
 	int playerScore;//эта переменная может быть только у игрока
+	bool isShoot;
 
 	Player(Image &image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
-		playerScore = 0; state = stay;
+		playerScore = isShoot = 0; state = stay;
 		if (name == "Player1") {
 			sprite.setTextureRect(IntRect(27, 198, w, h));
 		}
@@ -57,6 +67,11 @@ public:
 			if (Keyboard::isKeyPressed(Keyboard::Down)) {
 				state = down;
 			}
+			
+			if (Keyboard::isKeyPressed(Keyboard::Space)) {
+				isShoot = true;
+			}
+
 		}
 	}
 
@@ -138,9 +153,81 @@ public:
 	}
 };
 
+
+/////////////////////// КЛАСС ДВИЖУЩЕЙСЯ ПЛАТФОРМЫ //////////////////////////
+class MovingPlatform : public Entity {//класс движущейся платформы
+public:
+	MovingPlatform(Image &image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
+		sprite.setTextureRect(IntRect(0, 34, W, H));//прямоугольник 
+		dx = 0.08;//изначальное ускорение по Х
+	}
+
+	void update(float time)//функция обновления платформы.
+	{
+		x += dx * time;//реализация движения по горизонтали
+		moveTimer += time;//наращиваем таймер
+		if (moveTimer>2000) { dx *= -1; moveTimer = 0; }//если прошло примерно 2 сек, то меняется направление движения платформы,а таймер обнуляется
+		sprite.setPosition(x + w / 2, y + h / 2);//задаем позицию спрайту
+	}
+};
+
+//class MENU {
+//public:
+//	Sprite sprite;
+//	MENU(Image &image, float X, float Y, int W, int H, String Name) {
+//		sprite.setTextureRect(IntRect(0, 0, W, H));//прямоугольник
+//	}
+//};
+
+
+
+/////////////////////// КЛАСС ПУЛИ(СТРЕЛЬБЫ) //////////////////////////
+class Bullet :public Entity {//класс пули
+public:
+	int direction;//направление пули
+
+	Bullet(Image &image, float X, float Y, int W, int H, String Name, int dir) :Entity(image, X, Y, W, H, Name) {
+		x = X;
+		y = Y;
+		direction = dir;
+		speed = 0.8;
+		w = h = 16;
+		life = true;
+	}
+
+
+	void update(float time)
+	{
+		switch (direction)
+		{
+		case 0: dx = -speed; dy = 0;   break;
+		case 1: dx = speed; dy = 0;   break;
+		case 2: dx = 0; dy = -speed;   break;
+		case 3: dx = 0; dy = -speed;   break;
+		case 4: dx = 0; dy = -speed;   break;
+		case 5: dx = 0; dy = -speed;   break;
+		}
+
+		x += dx*time;
+		y += dy*time;
+
+		//if (x <= 0) x = 1;
+		//if (y <= 0) y = 1;
+
+		for (int i(0); i < WIDTH_MAP; i++) {
+			if (x == TileMap[26][i] && TileMap[26][i] == '0') {
+				life = false;
+			}
+		}
+
+		sprite.setPosition(x + w / 2, y + h / 2);//задается позицию пуле
+	}
+};
+
+
 int main()
 {
-	RenderWindow window(VideoMode(800, 400), "test");
+	RenderWindow window(VideoMode(900, 400), "test");
 	view.reset(FloatRect(0, 0, 800, 400));
 
 
@@ -158,13 +245,35 @@ int main()
 
 	Image easyEnemyImage;
 	easyEnemyImage.loadFromFile("images\\dark.png");
-	easyEnemyImage.createMaskFromColor(Color(0, 0, 255));//маску по цвету.но лучше изначально иметь прозрачную картинку
+	easyEnemyImage.createMaskFromColor(Color(0, 0, 255));//маску по цвету
 
 
 	Player p(heroImage, 300, 200, 17, 24, "Player1");//объект класса игрока
-	Enemy easyEnemy(easyEnemyImage, 240, 373, 22, 29, "EasyEnemy");//простой враг, объект класса врага
+	Enemy easyEnemy(easyEnemyImage, 240, 380, 22, 29, "EasyEnemy");//простой враг, объект класса врага
+
+	Image movePlatformImage;
+	movePlatformImage.loadFromFile("images\\Tiny_Chao_Garden_SonicAdv_3_Tile_Sheet.png");
+	MovingPlatform movePlatform(movePlatformImage, 650, 373, 50, 16, "MovingPlatform");
+
+	Image BulletImage;//изображение для пули
+	BulletImage.loadFromFile("images\\bullet.png");//загрузили картинку в объект изображения
+	BulletImage.createMaskFromColor(Color(0, 0, 0));
+
+
+	std::list<Entity*>  entities;
+	std::list<Entity*>::iterator it;
+	std::list<Entity*>::iterator it2;//второй итератор.для взаимодействия между объектами списка
+
+
 
 	Clock clock;
+
+	//Image menuButtonsImage;
+	//menuButtonsImage.loadFromFile("images\\menuButtons.png");
+	//menuButtonsImage.createMaskFromColor(Color(0, 0, 0));
+	//MENU mainMenu(menuButtonsImage, 300, 200, 150, 50, "playButton");
+
+
 	while (window.isOpen())
 	{
 
@@ -173,13 +282,37 @@ int main()
 		clock.restart();
 		time = time / 800;
 
+
+		if ((movePlatform.name== "MovingPlatform") && (movePlatform.getRect().intersects(p.getRect())))//если игрок столкнулся с объектом списка и имя этого объекта movingplatform
+		{
+			if ((p.dy>0) || (p.onGround == false))//при этом игрок находится в состоянии после прыжка, т.е падает вниз
+				if (p.y + p.h<movePlatform.y + movePlatform.h)//если игрок находится выше платформы, т.е это его ноги минимум (тк мы уже проверяли что он столкнулся с платформой)
+				{
+					p.y = movePlatform.y - p.h + 3; p.x += movePlatform.dx*time; p.dy = 0; p.onGround = true; // то выталкиваем игрока так, чтобы он как бы стоял на платформе
+				}
+		}
+
+
+
+
 		Event event;
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
+			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, p.x, p.y, 16, 16, "Bullet", p.state)); }//если выстрелили, то появляется пуля
 		}
+
+		for (it = entities.begin(); it != entities.end();)
+		{
+			Entity *b = *it;
+			b->update(time);
+			if (b->life == false) { it = entities.erase(it); delete b; }
+			else it++;
+		}
+
 		p.update(time);// Player update function	
+		movePlatform.update(time);
 		easyEnemy.update(time);//easyEnemy update function
 		window.setView(view);
 		window.clear();
@@ -193,12 +326,19 @@ int main()
 				if ((TileMap[i][j] == '0')) s_map.setTextureRect(IntRect(576, 175, 17, 17));
 				//if ((TileMap[i][j] == 'f')) s_map.setTextureRect(IntRect(96, 0, 32, 32));
 				//if ((TileMap[i][j] == 'h')) s_map.setTextureRect(IntRect(128, 0, 32, 32));
+				if ((TileMap[i][j] == 'd')) s_map.setTextureRect(IntRect(0, 17, 17, 17));
+				//if ((TileMap[i][j] == 'p')) s_map.setTextureRect(IntRect(0, 34, 17, 17));
 				s_map.setPosition(j * 17, i * 17);
 
 				window.draw(s_map);
 			}
+
+		for (it = entities.begin(); it != entities.end(); it++) {
+			window.draw((*it)->sprite);
+		}
 		window.draw(easyEnemy.sprite);
 		window.draw(p.sprite);
+		window.draw(movePlatform.sprite);
 		window.display();
 	}
 	return 0;
