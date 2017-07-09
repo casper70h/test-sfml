@@ -45,19 +45,23 @@ public:
 	Player(Image &image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
 		playerScore = isShoot = 0; state = stay;
 		if (name == "Player1") {
-			sprite.setTextureRect(IntRect(27, 198, w, h));
+			sprite.setTextureRect(IntRect(172, 0, w, h));
 		}
 	}
-
-	void control() {
+	float currentFrame = 0;
+	void control(float time) {
 		if (Keyboard::isKeyPressed) {
 			if (Keyboard::isKeyPressed(Keyboard::Left)) {
 				state = left; speed = 0.1;
-				sprite.setTextureRect(IntRect(3, 230, w, h));
+				currentFrame += 0.01*time;
+				if (currentFrame > 6) currentFrame -= 6;
+				sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, -w, h));
 			}
 			if (Keyboard::isKeyPressed(Keyboard::Right)) {
 				state = right; speed = 0.1;
-				sprite.setTextureRect(IntRect(50, 167, w, h));
+				currentFrame += 0.01*time;
+				if (currentFrame > 6) currentFrame -= 6;
+				sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
 			}
 
 			if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
@@ -91,9 +95,14 @@ public:
 			}
 	}
 
+
+	float returnTime(float time) {
+		return time;
+	}
+
 	void update(float time)
 	{
-		control();//функция управления персонажем
+		control(time);//функция управления персонажем
 		switch (state)//тут делаются различные действия в зависимости от состояния
 		{
 		case right:dx = speed; break;//состояние идти вправо
@@ -239,8 +248,8 @@ int main()
 	s_map.setTexture(map);
 
 	Image heroImage;
-	heroImage.loadFromFile("images\\Pokemon.png");
-	heroImage.createMaskFromColor(Color(40, 152, 0));
+	heroImage.loadFromFile("images\\player.png");
+	heroImage.createMaskFromColor(Color(0, 0, 0));
 
 
 	Image easyEnemyImage;
@@ -248,7 +257,7 @@ int main()
 	easyEnemyImage.createMaskFromColor(Color(0, 0, 255));//маску по цвету
 
 
-	Player p(heroImage, 300, 200, 17, 24, "Player1");//объект класса игрока
+	Player p(heroImage, 300, 200, 30, 50, "Player1");//объект класса игрока
 	Enemy easyEnemy(easyEnemyImage, 240, 380, 22, 29, "EasyEnemy");//простой враг, объект класса врага
 
 	Image movePlatformImage;
