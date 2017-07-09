@@ -45,7 +45,7 @@ public:
 	Player(Image &image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
 		playerScore = isShoot = 0; state = stay;
 		if (name == "Player1") {
-			sprite.setTextureRect(IntRect(172, 0, w, h));
+			sprite.setTextureRect(IntRect(176, 0, w, h));
 		}
 	}
 	float currentFrame = 0;
@@ -55,7 +55,10 @@ public:
 				state = left; speed = 0.1;
 				currentFrame += 0.01*time;
 				if (currentFrame > 6) currentFrame -= 6;
-				sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, -w, h));
+				if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
+				else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
+				
+				
 			}
 			if (Keyboard::isKeyPressed(Keyboard::Right)) {
 				state = right; speed = 0.1;
@@ -76,6 +79,10 @@ public:
 				isShoot = true;
 			}
 
+		}
+		else {
+			state = stay;
+			sprite.setTextureRect(IntRect(172, 0, w, h));
 		}
 	}
 
@@ -109,7 +116,7 @@ public:
 		case left:dx = -speed; break;//состояние идти влево
 		case up: break;//будет состояние поднятия наверх (например по лестнице)
 		case down: dx = 0; break;//будет состояние во время спуска персонажа (например по лестнице)
-		case stay: break;//и здесь тоже		
+		case stay: dx = 0; break;//и здесь тоже		
 		}
 		x += dx*time;
 		checkCollisionWithMap(dx, 0);//обрабатываем столкновение по Х
@@ -200,7 +207,7 @@ public:
 		y = Y;
 		direction = dir;
 		speed = 0.8;
-		w = h = 16;
+		w = h = 50;
 		life = true;
 	}
 
@@ -253,12 +260,12 @@ int main()
 
 
 	Image easyEnemyImage;
-	easyEnemyImage.loadFromFile("images\\dark.png");
-	easyEnemyImage.createMaskFromColor(Color(0, 0, 255));//маску по цвету
+	easyEnemyImage.loadFromFile("images\\spider.png");
+	easyEnemyImage.createMaskFromColor(Color(255, 255, 255));//маску по цвету
 
 
 	Player p(heroImage, 300, 200, 30, 50, "Player1");//объект класса игрока
-	Enemy easyEnemy(easyEnemyImage, 240, 380, 22, 29, "EasyEnemy");//простой враг, объект класса врага
+	Enemy easyEnemy(easyEnemyImage, 240, 386, 80, 38, "EasyEnemy");//простой враг, объект класса врага
 
 	Image movePlatformImage;
 	movePlatformImage.loadFromFile("images\\Tiny_Chao_Garden_SonicAdv_3_Tile_Sheet.png");
