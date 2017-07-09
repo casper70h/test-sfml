@@ -1,26 +1,28 @@
 #include <SFML/Graphics.hpp>
-#include "map.h"
+//#include "map.h"
 #include "view.h"
 #include <iostream>
 #include <sstream>
-//#include <conio.h>
+#include "iostream"
+#include "level.h"
 #include <vector>
 #include <list>
+#include "TinyXML/tinyxml.h"
 
 using namespace sf;
-
 
 
 ////////////////////////////////////Общий класс родитель//////////////////////////
 class Entity {
 public:
-	float dx, dy, x, y, speed, moveTimer;//добавили переменную таймер для будущих целей
+	std::vector<Object> obj;//вектор объектов карты
+	float dx, dy, x, y, speed, moveTimer;
 	int w, h, health;
 	bool life, isMove, onGround;
 	Texture texture;
 	Sprite sprite;
-	String name;//враги могут быть разные, мы не будем делать другой класс для различающегося врага.всего лишь различим врагов по имени и дадим каждому свое действие в update в зависимости от имени
-	Entity(Image &image, float X, float Y, int W, int H, String Name) {
+	String name;
+	Entity(Image &image, String Name, float X, float Y, int W, int H) {
 		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0;
 		speed = 0; health = 100; dx = 0; dy = 0;
 		life = true; onGround = false; isMove = false;
@@ -29,8 +31,8 @@ public:
 		sprite.setOrigin(w / 2, h / 2);
 	}
 
-	FloatRect getRect() {
-		return FloatRect(x, y, w, h);
+	FloatRect getRect() {//ф-ция получения прямоугольника. его коорд,размеры (шир,высот).
+		return FloatRect(x, y, w, h);//эта ф-ция нужна для проверки столкновений 
 	}
 
 	virtual void update(float time) = 0;
@@ -38,16 +40,16 @@ public:
 ////////////////////////////////////////////////////КЛАСС ИГРОКА////////////////////////
 class Player :public Entity {
 public:
-	enum { left, right, up, down, jump, stay } state;//добавляем тип перечисления - состояние объекта
-	int playerScore;//эта переменная может быть только у игрока
+	enum { left, right, up, down, jump, stay } state;
+	int playerScore;
 	bool isShoot;
-
-	Player(Image &image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
-		playerScore = isShoot = 0; state = stay;
+	Player(Image &image, String Name, Level &lev, float X, float Y, int W, int H) :Entity(image, Name, X, Y, W, H) {
+		playerScore = 0; state = stay; obj = lev.GetAllObjects();//инициализируем.получаем все объекты для взаимодействия персонажа с картой
 		if (name == "Player1") {
 			sprite.setTextureRect(IntRect(176, 0, w, h));
 		}
 	}
+
 	float currentFrame = 0;
 	void control(float time) {
 		if (Keyboard::isKeyPressed) {
@@ -86,19 +88,31 @@ public:
 		}
 	}
 
-	void checkCollisionWithMap(float Dx, float Dy)//ф ция проверки столкновений с картой
+	void checkCollisionWithMap(float Dx, float Dy)
 	{
-		for (int i = y / 17; i < (y + h) / 17; i++)//проходимся по элементам карты
-			for (int j = x / 17; j<(x + w) / 17; j++)
+		/*вариант взаимодействия со старой картой
+		for (int i = y / 32; i < (y + h) / 32; i++)//проходимся по элементам карты
+		for (int j = x / 32; j<(x + w) / 32; j++)
+		{
+		if (TileMap[i][j] == '0')
+		{
+		if (Dy>0){ y = i * 32 - h;  dy = 0; onGround = true; }
+		if (Dy<0){ y = i * 32 + 32;  dy = 0; }
+		if (Dx>0){ x = j * 32 - w; }
+		if (Dx<0){ x = j * 32 + 32; }
+		}
+		}*/
+
+		for (int i = 0; i<obj.size(); i++)//проходимся по объектам
+			if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
 			{
-				if (TileMap[i][j] == '0')//если элемент наш тайлик земли? то
+				if (obj[i].name == "solid")//если встретили препятствие
 				{
-					if (Dy>0) { y = i * 17 - h;  dy = 0; onGround = true; }//по Y вниз=>идем в пол(стоим на месте) или падаем. В этот момент надо вытолкнуть персонажа и поставить его на землю, при этом говорим что мы на земле тем самым снова можем прыгать
-					if (Dy<0) { y = i * 17 + 17;  dy = 0; }//столкновение с верхними краями карты(может и не пригодиться)
-					if (Dx>0) { x = j * 17 - w; }//с правым краем карты
-					if (Dx<0) { x = j * 17 + 17; }// с левым краем карты
+					if (Dy>0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
+					if (Dy<0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
+					if (Dx>0) { x = obj[i].rect.left - w; }
+					if (Dx<0) { x = obj[i].rect.left + obj[i].rect.width; }
 				}
-				//else { onGround = false; }//надо убрать т.к мы можем находиться и на другой поверхности или платформе которую разрушит враг
 			}
 	}
 
@@ -134,25 +148,36 @@ public:
 
 class Enemy :public Entity {
 public:
-	Enemy(Image &image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
-		if (name == "EasyEnemy") {
-			sprite.setTextureRect(IntRect(0, 0, w, h));
-			dx = 0.1;//даем скорость.этот объект всегда двигается
-		}
+	Enemy(Image &image, String Name, Level &lvl, float X, float Y, int W, int H) :Entity(image, Name, X, Y, W, H) {
+		obj = lvl.GetObjects("solid");//инициализируем.получаем нужные объекты для взаимодействия врага с картой	if (name == "EasyEnemy") {
+		sprite.setTextureRect(IntRect(0, 0, w, h));
+		dx = 0.1;//даем скорость.этот объект всегда двигается
 	}
 
-	void checkCollisionWithMap(float Dx, float Dy)//ф-ия проверки столкновений с картой
+	void checkCollisionWithMap(float Dx, float Dy)
 	{
-		for (int i = y / 17; i < (y + h) / 17; i++)//проходимся по элементам карты
-			for (int j = x / 17; j<(x + w) / 17; j++)
+		/*вариант взаимодействия со старой картой
+		for (int i = y / 32; i < (y + h) / 32; i++)
+		for (int j = x / 32; j<(x + w) / 32; j++)
+		{
+		if (TileMap[i][j] == '0')
+		{
+		if (Dy>0){ y = i * 32 - h; }
+		if (Dy<0){ y = i * 32 + 32; }
+		if (Dx>0){ x = j * 32 - w; dx = -0.1; sprite.scale(-1, 1); }
+		if (Dx<0){ x = j * 32 + 32; dx = 0.1; sprite.scale(-1, 1); }
+		}
+		}*/
+
+		for (int i = 0; i<obj.size(); i++)//проходимся по объектам
+			if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
 			{
-				if (TileMap[i][j] == '0')//если элемент наш тайлик земли, то
-				{
-					if (Dy>0) { y = i * 17 - h; }//по Y вниз=>идем в пол(стоим на месте) или падаем. В этот момент надо вытолкнуть персонажа и поставить его на землю, при этом говорим что мы на земле тем самым снова можем прыгать
-					if (Dy<0) { y = i * 17 + 17; }//столкновение с верхними краями карты(может и не пригодиться)
-					if (Dx>0) { x = j * 17 - w; dx = -0.1; sprite.scale(-1, 1); }//с правым краем карты
-					if (Dx<0) { x = j * 17 + 17; dx = 0.1; sprite.scale(-1, 1); }// с левым краем карты
-				}
+				//if (obj[i].name == "solid"){//если встретили препятствие (объект с именем solid)
+				if (Dy>0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
+				if (Dy<0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
+				if (Dx>0) { x = obj[i].rect.left - w;  dx = -0.1; sprite.scale(-1, 1); }
+				if (Dx<0) { x = obj[i].rect.left + obj[i].rect.width; dx = 0.1; sprite.scale(-1, 1); }
+				//}
 			}
 	}
 
@@ -173,7 +198,7 @@ public:
 /////////////////////// КЛАСС ДВИЖУЩЕЙСЯ ПЛАТФОРМЫ //////////////////////////
 class MovingPlatform : public Entity {//класс движущейся платформы
 public:
-	MovingPlatform(Image &image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
+	MovingPlatform(Image &image, String Name, Level &lvl, float X, float Y, int W, int H) :Entity(image, Name, X, Y, W, H) {
 		sprite.setTextureRect(IntRect(0, 34, W, H));//прямоугольник 
 		dx = 0.08;//изначальное ускорение по Х
 	}
@@ -202,7 +227,7 @@ class Bullet :public Entity {//класс пули
 public:
 	int direction;//направление пули
 
-	Bullet(Image &image, float X, float Y, int W, int H, String Name, int dir) :Entity(image, X, Y, W, H, Name) {
+	Bullet(Image &image, String Name, Level &lvl, float X, float Y, int W, int H, int dir) :Entity(image, Name, X, Y, W, H) {
 		x = X;
 		y = Y;
 		direction = dir;
@@ -230,12 +255,6 @@ public:
 		//if (x <= 0) x = 1;
 		//if (y <= 0) y = 1;
 
-		for (int i(0); i < WIDTH_MAP; i++) {
-			if (x == TileMap[26][i] && TileMap[26][i] == '0') {
-				life = false;
-			}
-		}
-
 		sprite.setPosition(x + w / 2, y + h / 2);//задается позицию пуле
 	}
 };
@@ -247,12 +266,18 @@ int main()
 	view.reset(FloatRect(0, 0, 800, 400));
 
 
-	Image map_image;
-	map_image.loadFromFile("images\\Tiny_Chao_Garden_SonicAdv_3_Tile_Sheet.png");
-	Texture map;
-	map.loadFromImage(map_image);
-	Sprite s_map;
-	s_map.setTexture(map);
+	//метод загрузки старой карты
+			/*
+			Image map_image;
+			map_image.loadFromFile("images\\Tiny_Chao_Garden_SonicAdv_3_Tile_Sheet.png");
+			Texture map;
+			map.loadFromImage(map_image);
+			Sprite s_map;
+			s_map.setTexture(map);
+			*/
+	
+	Level lvl;//создали экземпляр класса уровень
+	lvl.LoadFromFile("newMap.tmx");//загрузили в него карту, внутри класса с помощью методов он ее обработает.
 
 	Image heroImage;
 	heroImage.loadFromFile("images\\player.png");
@@ -264,12 +289,18 @@ int main()
 	easyEnemyImage.createMaskFromColor(Color(255, 255, 255));//маску по цвету
 
 
-	Player p(heroImage, 300, 200, 30, 50, "Player1");//объект класса игрока
-	Enemy easyEnemy(easyEnemyImage, 240, 386, 80, 38, "EasyEnemy");//простой враг, объект класса врага
+	Object player = lvl.GetObject("player");//объект игрока на нашей карте.задаем координаты игроку в начале при помощи него
+	Object easyEnemyObject = lvl.GetObject("easyEnemy");//объект легкого врага на нашей карте.задаем координаты игроку в начале при помощи него
+
+	Player p(heroImage, "Player1", lvl, player.rect.left, player.rect.top, 30, 50);//передаем координаты прямоугольника player из карты в координаты нашего игрока
+	Enemy easyEnemy(easyEnemyImage, "EasyEnemy", lvl, easyEnemyObject.rect.left, easyEnemyObject.rect.top, 80, 38);//передаем координаты прямоугольника easyEnemy из карты в координаты нашего врага
+
+			//Player p(heroImage, 300, 200, 30, 50, "Player1");//объект класса игрока
+			//Enemy easyEnemy(easyEnemyImage, 240, 386, 80, 38, "EasyEnemy");//простой враг, объект класса врага
 
 	Image movePlatformImage;
 	movePlatformImage.loadFromFile("images\\Tiny_Chao_Garden_SonicAdv_3_Tile_Sheet.png");
-	MovingPlatform movePlatform(movePlatformImage, 650, 373, 50, 16, "MovingPlatform");
+	MovingPlatform movePlatform(movePlatformImage, "MovingPlatform", lvl, 650, 373, 50, 16);
 
 	Image BulletImage;//изображение для пули
 	BulletImage.loadFromFile("images\\bullet.png");//загрузили картинку в объект изображения
@@ -315,8 +346,8 @@ int main()
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
-				window.close();
-			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, p.x, p.y, 16, 16, "Bullet", p.state)); }//если выстрелили, то появляется пуля
+				window.close();						
+			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.state)); }//если выстрелили, то появляется пуля
 		}
 
 		for (it = entities.begin(); it != entities.end();)
@@ -331,23 +362,25 @@ int main()
 		movePlatform.update(time);
 		easyEnemy.update(time);//easyEnemy update function
 		window.setView(view);
-		window.clear();
+		window.clear(Color(77, 83, 140));
+		lvl.Draw(window);//рисуем новую карту
 
+		//создание карты старая реализация
+							/*for (int i = 0; i < HEIGHT_MAP; i++)
+								for (int j = 0; j < WIDTH_MAP; j++)
+								{
+									if (TileMap[i][j] == ' ')  s_map.setTextureRect(IntRect(0, 0, 17, 17));
+									//if (TileMap[i][j] == 's')  s_map.setTextureRect(IntRect(32, 0, 32, 32));
+									if ((TileMap[i][j] == '0')) s_map.setTextureRect(IntRect(576, 175, 17, 17));
+									//if ((TileMap[i][j] == 'f')) s_map.setTextureRect(IntRect(96, 0, 32, 32));
+									//if ((TileMap[i][j] == 'h')) s_map.setTextureRect(IntRect(128, 0, 32, 32));
+									if ((TileMap[i][j] == 'd')) s_map.setTextureRect(IntRect(0, 17, 17, 17));
+									//if ((TileMap[i][j] == 'p')) s_map.setTextureRect(IntRect(0, 34, 17, 17));
+									s_map.setPosition(j * 17, i * 17);
 
-		for (int i = 0; i < HEIGHT_MAP; i++)
-			for (int j = 0; j < WIDTH_MAP; j++)
-			{
-				if (TileMap[i][j] == ' ')  s_map.setTextureRect(IntRect(0, 0, 17, 17));
-				//if (TileMap[i][j] == 's')  s_map.setTextureRect(IntRect(32, 0, 32, 32));
-				if ((TileMap[i][j] == '0')) s_map.setTextureRect(IntRect(576, 175, 17, 17));
-				//if ((TileMap[i][j] == 'f')) s_map.setTextureRect(IntRect(96, 0, 32, 32));
-				//if ((TileMap[i][j] == 'h')) s_map.setTextureRect(IntRect(128, 0, 32, 32));
-				if ((TileMap[i][j] == 'd')) s_map.setTextureRect(IntRect(0, 17, 17, 17));
-				//if ((TileMap[i][j] == 'p')) s_map.setTextureRect(IntRect(0, 34, 17, 17));
-				s_map.setPosition(j * 17, i * 17);
-
-				window.draw(s_map);
-			}
+									window.draw(s_map);
+								}
+							*/
 
 		for (it = entities.begin(); it != entities.end(); it++) {
 			window.draw((*it)->sprite);

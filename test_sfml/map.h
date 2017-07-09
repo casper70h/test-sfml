@@ -1,3 +1,4 @@
+/*
 #pragma once
 
 #include <SFML/Graphics.hpp>
@@ -44,3 +45,4 @@ sf::String TileMap[HEIGHT_MAP] = {
 	"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
 	"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
 };
+*/
