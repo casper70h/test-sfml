@@ -35,7 +35,7 @@ public:
 		return FloatRect(x, y, w, h);//эта ф-ция нужна для проверки столкновений 
 	}
 
-	virtual void update(float time) = 0;
+	virtual void update(float time) = 0; //все потомки переопределяют эту функцию
 };
 ////////////////////////////////////////////////////КЛАСС ИГРОКА////////////////////////
 class Player :public Entity {
@@ -290,10 +290,10 @@ int main()
 
 
 	Object player = lvl.GetObject("player");//объект игрока на нашей карте.задаем координаты игроку в начале при помощи него
-	Object easyEnemyObject = lvl.GetObject("easyEnemy");//объект легкого врага на нашей карте.задаем координаты игроку в начале при помощи него
+	//Object easyEnemyObject = lvl.GetObject("easyEnemy");//объект легкого врага на нашей карте.задаем координаты игроку в начале при помощи него
 
 	Player p(heroImage, "Player1", lvl, player.rect.left, player.rect.top, 30, 50);//передаем координаты прямоугольника player из карты в координаты нашего игрока
-	Enemy easyEnemy(easyEnemyImage, "EasyEnemy", lvl, easyEnemyObject.rect.left, easyEnemyObject.rect.top, 80, 38);//передаем координаты прямоугольника easyEnemy из карты в координаты нашего врага
+	//Enemy easyEnemy(easyEnemyImage, "EasyEnemy", lvl, easyEnemyObject.rect.left, easyEnemyObject.rect.top, 80, 38);//передаем координаты прямоугольника easyEnemy из карты в координаты нашего врага
 
 			//Player p(heroImage, 300, 200, 30, 50, "Player1");//объект класса игрока
 			//Enemy easyEnemy(easyEnemyImage, 240, 386, 80, 38, "EasyEnemy");//простой враг, объект класса врага
@@ -308,8 +308,15 @@ int main()
 
 
 	std::list<Entity*>  entities;
-	std::list<Entity*>::iterator it;
+	std::list<Entity*>::iterator it; //итер для прохождения по эл. списка
 	std::list<Entity*>::iterator it2;//второй итератор.для взаимодействия между объектами списка
+
+	std::vector<Object> e = lvl.GetObjects("easyEnemy"); //все объекты врака EasyEnemy на TMX хранятся в этом векторе
+	for (int i(0); i < e.size(); i++) {
+		entities.push_back(new Enemy(easyEnemyImage, "easyEnemy", lvl, e[i].rect.left, e[i].rect.top, 80, 38));
+	}
+
+
 
 
 
@@ -350,6 +357,14 @@ int main()
 			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.state)); }//если выстрелили, то появляется пуля
 		}
 
+		for (it = entities.begin(); it != entities.end(); it++) {
+			window.draw((*it)->sprite); //рисуем всех врагов которые находятся в списке
+		}
+
+		for (it = entities.begin(); it != entities.end(); it++) {
+			(*it)->update(time); // вызываем функ. update для всех эл. списка
+		}
+
 		for (it = entities.begin(); it != entities.end();)
 		{
 			Entity *b = *it;
@@ -360,7 +375,7 @@ int main()
 
 		p.update(time);// Player update function	
 		movePlatform.update(time);
-		easyEnemy.update(time);//easyEnemy update function
+		//easyEnemy.update(time);//easyEnemy update function
 		window.setView(view);
 		window.clear(Color(77, 83, 140));
 		lvl.Draw(window);//рисуем новую карту
@@ -382,10 +397,10 @@ int main()
 								}
 							*/
 
-		for (it = entities.begin(); it != entities.end(); it++) {
-			window.draw((*it)->sprite);
-		}
-		window.draw(easyEnemy.sprite);
+
+			
+		
+			//window.draw(easyEnemy.sprite);
 		window.draw(p.sprite);
 		window.draw(movePlatform.sprite);
 		window.display();
