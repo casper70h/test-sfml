@@ -212,6 +212,8 @@ public:
 	}
 };
 
+
+
 //class MENU {
 //public:
 //	Sprite sprite;
@@ -300,7 +302,7 @@ int main()
 
 	Image movePlatformImage;
 	movePlatformImage.loadFromFile("images\\Tiny_Chao_Garden_SonicAdv_3_Tile_Sheet.png");
-	MovingPlatform movePlatform(movePlatformImage, "MovingPlatform", lvl, 650, 373, 50, 16);
+	//MovingPlatform movePlatform(movePlatformImage, "MovingPlatform", lvl, 650, 373, 50, 16);
 
 	Image BulletImage;//изображение для пули
 	BulletImage.loadFromFile("images\\bullet.png");//загрузили картинку в объект изображения
@@ -311,12 +313,17 @@ int main()
 	std::list<Entity*>::iterator it; //итер для прохождения по эл. списка
 	std::list<Entity*>::iterator it2;//второй итератор.для взаимодействия между объектами списка
 
-	std::vector<Object> e = lvl.GetObjects("easyEnemy"); //все объекты врака EasyEnemy на TMX хранятся в этом векторе
+	std::vector<Object> e = lvl.GetObjects("EasyEnemy"); //все объекты врака EasyEnemy на TMX хранятся в этом векторе
+
+	e = lvl.GetObjects("MovingPlatform"); // забираем все платформы в вектор
+
 	for (int i(0); i < e.size(); i++) {
-		entities.push_back(new Enemy(easyEnemyImage, "easyEnemy", lvl, e[i].rect.left, e[i].rect.top, 80, 38));
+		entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, e[i].rect.left, e[i].rect.top, 80, 38));
 	}
 
-
+	for (int i(0); i < e.size(); i++) {
+		entities.push_back(new MovingPlatform(movePlatformImage, "MovingPlatform", lvl, e[i].rect.left, e[i].rect.top, 50, 16));
+	}
 
 
 
@@ -336,8 +343,8 @@ int main()
 		clock.restart();
 		time = time / 800;
 
-
-		if ((movePlatform.name== "MovingPlatform") && (movePlatform.getRect().intersects(p.getRect())))//если игрок столкнулся с объектом списка и имя этого объекта movingplatform
+		//можно платформу создать так но я добавил её в общий цикл ниже с началом it
+		/*if ((movePlatform.name== "MovingPlatform") && (movePlatform.getRect().intersects(p.getRect())))//если игрок столкнулся с объектом списка и имя этого объекта movingplatform
 		{
 			if ((p.dy>0) || (p.onGround == false))//при этом игрок находится в состоянии после прыжка, т.е падает вниз
 				if (p.y + p.h<movePlatform.y + movePlatform.h)//если игрок находится выше платформы, т.е это его ноги минимум (тк мы уже проверяли что он столкнулся с платформой)
@@ -345,36 +352,101 @@ int main()
 					p.y = movePlatform.y - p.h + 3; p.x += movePlatform.dx*time; p.dy = 0; p.onGround = true; // то выталкиваем игрока так, чтобы он как бы стоял на платформе
 				}
 		}
-
-
-
+		*/
 
 		Event event;
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();						
-			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.state)); }//если выстрелили, то появляется пуля
+			//if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.state)); }//если выстрелили, то появляется пуля
 		}
+			
 
-		for (it = entities.begin(); it != entities.end(); it++) {
-			window.draw((*it)->sprite); //рисуем всех врагов которые находятся в списке
-		}
+		p.update(time);// Player update function	
+		
 
+		/*
 		for (it = entities.begin(); it != entities.end(); it++) {
 			(*it)->update(time); // вызываем функ. update для всех эл. списка
 		}
-
+		*/
+		
 		for (it = entities.begin(); it != entities.end();)
 		{
 			Entity *b = *it;
-			b->update(time);
+			b->update(time);  //for (it = entities.begin(); it != entities.end(); it++) {(*it)->update(time); // вызываем функ. update для всех эл. списка
 			if (b->life == false) { it = entities.erase(it); delete b; }
 			else it++;
 		}
+		
 
-		p.update(time);// Player update function	
-		movePlatform.update(time);
+		for (it = entities.begin(); it != entities.end(); it++)//проходимся по эл-там списка
+		{
+			if (((*it)->name == "MovingPlatform") && ((*it)->getRect().intersects(p.getRect())))//если игрок столкнулся с объектом списка и имя этого объекта movingplatform
+			{
+				Entity *movPlat = *it;
+				if ((p.dy>0) || (p.onGround == false))//при этом игрок находится в состоянии после прыжка, т.е падает вниз
+					if (p.y + p.h<movPlat->y + movPlat->h)//если игрок находится выше платформы, т.е это его ноги минимум (тк мы уже проверяли что он столкнулся с платформой)
+					{
+						p.y = movPlat->y - p.h + 3; p.x += movPlat->dx*time; p.dy = 0; p.onGround = true; // то выталкиваем игрока так, чтобы он как бы стоял на платформе
+					}
+			}
+
+			if ((*it)->getRect().intersects(p.getRect()))//если прямоугольник спрайта объекта пересекается с игроком
+			{
+				if ((*it)->name == "EasyEnemy") {//и при этом имя объекта EasyEnemy,то..
+					if ((*it)->dx>0)//если враг идет вправо
+					{
+						std::cout << "(*it)->x" << (*it)->x << "\n";//коорд игрока
+						std::cout << "p.x" << p.x << "\n\n";//коорд врага
+
+						(*it)->x = p.x - (*it)->w; //отталкиваем его от игрока влево (впритык)
+						(*it)->dx = 0;//останавливаем
+
+						std::cout << "new (*it)->x" << (*it)->x << "\n";//новая коорд врага
+						std::cout << "new p.x" << p.x << "\n\n";//новая коорд игрока (останется прежней)
+					}
+					if ((*it)->dx < 0)//если враг идет влево
+					{
+						(*it)->x = p.x + p.w; //аналогично - отталкиваем вправо
+						(*it)->dx = 0;//останавливаем
+					}
+					///////выталкивание игрока
+					if (p.dx < 0) { p.x = (*it)->x + (*it)->w; }//если столкнулись с врагом и игрок идет влево то выталкиваем игрока
+					if (p.dx > 0) { p.x = (*it)->x - p.w; }//если столкнулись с врагом и игрок идет вправо то выталкиваем игрока
+				}
+			}
+			for (it2 = entities.begin(); it2 != entities.end(); it2++) {
+				if ((*it)->getRect() != (*it2)->getRect())//при этом это должны быть разные прямоугольники
+					if (((*it)->getRect().intersects((*it2)->getRect())) && ((*it)->name == "EasyEnemy") && ((*it2)->name == "EasyEnemy"))//если столкнулись два объекта и они враги
+					{
+						(*it)->dx *= -1;//меняем направление движения врага
+						(*it)->sprite.scale(-1, 1);//отражаем спрайт по горизонтали
+					}
+			}
+		}
+
+						//   ^
+						/*   |  
+						for (it = entities.begin(); it != entities.end(); it++)//проходимся по эл-там списка
+						{
+							if ((*it)->getRect().intersects(p.getRect()))//если прямоугольник спрайта объекта пересекается с игроком
+							{
+								if ((*it)->name == "easyEnemy") {//и при этом имя объекта EasyEnemy,то..
+
+									if ((p.dy>0) && (p.onGround == false)) { (*it)->dx = 0; p.dy = -0.2; (*it)->health = 0; }//если прыгнули на врага,то даем врагу скорость 0,отпрыгиваем от него чуть вверх,даем ему здоровье 0
+									else {
+										p.health -= 5;	//иначе враг подошел к нам сбоку и нанес урон
+									}
+								}
+							}
+						}
+						*/
+
+	
+
+		//movePlatform.update(time);
 		//easyEnemy.update(time);//easyEnemy update function
 		window.setView(view);
 		window.clear(Color(77, 83, 140));
@@ -396,13 +468,16 @@ int main()
 									window.draw(s_map);
 								}
 							*/
-
-
 			
 		
 			//window.draw(easyEnemy.sprite);
+
+		for (it = entities.begin(); it != entities.end(); it++) {
+			window.draw((*it)->sprite); //рисуем всех врагов которые находятся в списке
+		}
+
 		window.draw(p.sprite);
-		window.draw(movePlatform.sprite);
+		//window.draw(movePlatform.sprite);
 		window.display();
 	}
 	return 0;
