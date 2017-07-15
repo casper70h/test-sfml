@@ -35,6 +35,10 @@ public:
 		return FloatRect(x, y, w, h);//эта ф-ция нужна для проверки столкновений 
 	}
 
+	float getX() {
+		return float(x);
+	}
+
 	virtual void update(float time) = 0; //все потомки переопределяют эту функцию
 };
 ////////////////////////////////////////////////////КЛАСС ИГРОКА////////////////////////
@@ -192,6 +196,7 @@ public:
 			if (health <= 0) { life = false; }
 		}
 	}
+
 };
 
 
@@ -359,7 +364,7 @@ int main()
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();						
-			//if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.state)); }//если выстрелили, то появляется пуля
+			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.state)); }//если выстрелили, то появляется пуля
 		}
 			
 
@@ -371,6 +376,15 @@ int main()
 			(*it)->update(time); // вызываем функ. update для всех эл. списка
 		}
 		*/
+
+		for (it = entities.begin(); it != entities.end(); it++) {
+			for(it2 = entities.begin(); it2 != entities.end(); it2++) {
+				if (((*it)->name == "Bullet") && ((*it2)->name == "EasyEnemy") && (*it)->getRect().intersects((*it2)->getRect())) {
+					(*it2)->dx = 0;
+					(*it2)->health = 0;
+				}
+			}
+		}
 		
 		for (it = entities.begin(); it != entities.end();)
 		{
@@ -392,7 +406,7 @@ int main()
 						p.y = movPlat->y - p.h + 3; p.x += movPlat->dx*time; p.dy = 0; p.onGround = true; // то выталкиваем игрока так, чтобы он как бы стоял на платформе
 					}
 			}
-
+			/*
 			if ((*it)->getRect().intersects(p.getRect()))//если прямоугольник спрайта объекта пересекается с игроком
 			{
 				if ((*it)->name == "EasyEnemy") {//и при этом имя объекта EasyEnemy,то..
@@ -417,6 +431,7 @@ int main()
 					if (p.dx > 0) { p.x = (*it)->x - p.w; }//если столкнулись с врагом и игрок идет вправо то выталкиваем игрока
 				}
 			}
+			*/
 			for (it2 = entities.begin(); it2 != entities.end(); it2++) {
 				if ((*it)->getRect() != (*it2)->getRect())//при этом это должны быть разные прямоугольники
 					if (((*it)->getRect().intersects((*it2)->getRect())) && ((*it)->name == "EasyEnemy") && ((*it2)->name == "EasyEnemy"))//если столкнулись два объекта и они враги
