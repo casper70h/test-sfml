@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" tiledversion="1.0.2" orientation="orthogonal" renderorder="right-down" width="100" height="27" tilewidth="32" tileheight="32" nextobjectid="95">
+<map version="1.0" tiledversion="1.0.2" orientation="orthogonal" renderorder="right-down" width="100" height="27" tilewidth="32" tileheight="32" nextobjectid="105">
  <tileset firstgid="1" name="tilesForMap" tilewidth="32" tileheight="32" tilecount="32" columns="16">
   <image source="images/tilesForMap.png" width="538" height="76"/>
  </tileset>
@@ -5429,26 +5429,17 @@
   <object id="70" name="solid" x="159.636" y="592.485" width="32" height="14"/>
   <object id="71" name="solid" x="193.636" y="560.485" width="27" height="15"/>
   <object id="72" name="solid" x="225.636" y="529.485" width="28" height="15"/>
-  <object id="73" name="solid" x="535.424" y="187.758" width="28" height="14"/>
   <object id="74" name="solid" x="287.636" y="593.485" width="31" height="13"/>
   <object id="75" name="solid" x="321.636" y="624.485" width="28" height="13"/>
   <object id="76" name="solid" x="995.636" y="565.485" width="5" height="4"/>
   <object id="77" name="solid" x="1025.64" y="513.485" width="4" height="2"/>
   <object id="78" name="solid" x="1080.64" y="495.485" width="3" height="5"/>
-  <object id="79" name="solid" x="1.636" y="619.485" width="6" height="82"/>
+  <object id="79" name="solid" x="12.3027" y="619.485" width="6" height="82"/>
   <object id="80" name="solid" x="3191.64" y="564.485" width="7" height="73"/>
-  <object id="81" name="player" x="226.969" y="606.485" width="30" height="50"/>
-  <object id="82" name="EasyEnemy" x="2129.64" y="696.652" width="80" height="38"/>
-  <object id="83" name="EasyEnemy" x="2976" y="632.5" width="80" height="38"/>
-  <object id="84" name="EasyEnemy" x="564" y="697" width="80" height="38"/>
-  <object id="86" name="EasyEnemy" x="89" y="697" width="80" height="38"/>
-  <object id="87" name="MovingPlatform" x="459.636" y="653.485" width="50" height="16"/>
-  <object id="88" name="MovingPlatform" x="597" y="604" width="50" height="16"/>
-  <object id="89" name="MovingPlatform" x="538.03" y="515.152" width="50" height="16"/>
-  <object id="90" name="MovingPlatform" x="517.424" y="407.152" width="50" height="16"/>
-  <object id="91" name="MovingPlatform" x="350.758" y="310.182" width="50" height="16"/>
-  <object id="92" name="MovingPlatform" x="511.364" y="292" width="50" height="16"/>
-  <object id="93" name="MovingPlatform" x="244.697" y="555.636" width="50" height="16"/>
-  <object id="94" name="MovingPlatform" x="511.364" y="107.152" width="50" height="16"/>
+  <object id="81" name="player" x="578.969" y="449.485" width="30" height="50"/>
+  <object id="97" name="EasyEnemy" x="544.636" y="696.485" width="80" height="38"/>
+  <object id="102" name="solid" x="347.667" y="649" width="6" height="82"/>
+  <object id="103" name="EasyEnemy" x="672.97" y="694.939" width="80" height="38"/>
+  <object id="104" name="EasyEnemy" x="410.515" y="696.212" width="80" height="38"/>
  </objectgroup>
 </map>

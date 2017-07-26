@@ -2,6 +2,7 @@
 //#include "map.h"
 #include "view.h"
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include "iostream"
 #include "level.h"
@@ -185,17 +186,45 @@ public:
 			}
 	}
 
+	float currentFrame = 0;
+	void beforeDying(float time) {
+		
+		while (currentFrame < 20) {
+			std::cout << currentFrame << std::endl;
+			if (currentFrame > 20) {
+				currentFrame -= 20;
+				break;
+			}
+			currentFrame += 0.1*time;
+			Image tmpImage;
+			tmpImage.loadFromFile("images\\spiderBlood.png");
+			Texture tmpTexture;
+			tmpTexture.loadFromImage(tmpImage);
+			Sprite tmpSprite;
+			tmpSprite.setTexture(tmpTexture);
+			tmpSprite.setPosition(x, y);
+
+		}
+	}
+
 	void update(float time)
 	{
 		if (name == "EasyEnemy") {
-
 			//moveTimer += time;if (moveTimer>3000){ dx *= -1; moveTimer = 0; }//меняет направление примерно каждые 3 сек
 			checkCollisionWithMap(dx, 0);//обрабатываем столкновение по Х
 			x += dx*time;
 			sprite.setPosition(x + w / 2, y + h / 2); //задаем позицию спрайта в место его центра
-			if (health <= 0) { life = false; }
+			if (health <= 0) { 
+				dx = 0;
+				beforeDying(time);
+				life = false; 
+
+			}
 		}
 	}
+
+	
+	
 
 };
 
@@ -318,16 +347,16 @@ int main()
 	std::list<Entity*>::iterator it; //итер для прохождения по эл. списка
 	std::list<Entity*>::iterator it2;//второй итератор.для взаимодействия между объектами списка
 
-	std::vector<Object> e = lvl.GetObjects("EasyEnemy"); //все объекты врака EasyEnemy на TMX хранятся в этом векторе
+	std::vector<Object> en = lvl.GetObjects("EasyEnemy"); //все объекты врака EasyEnemy на TMX хранятся в этом векторе
 
-	e = lvl.GetObjects("MovingPlatform"); // забираем все платформы в вектор
+	std::vector<Object> pl = lvl.GetObjects("MovingPlatform"); // забираем все платформы в вектор
 
-	for (int i(0); i < e.size(); i++) {
-		entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, e[i].rect.left, e[i].rect.top, 80, 38));
+	for (int i(0); i < en.size(); i++) {
+		entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, en[i].rect.left, en[i].rect.top, 80, 38));
 	}
 
-	for (int i(0); i < e.size(); i++) {
-		entities.push_back(new MovingPlatform(movePlatformImage, "MovingPlatform", lvl, e[i].rect.left, e[i].rect.top, 50, 16));
+	for (int i(0); i < pl.size(); i++) {
+		entities.push_back(new MovingPlatform(movePlatformImage, "MovingPlatform", lvl, pl[i].rect.left, pl[i].rect.top, 50, 16));
 	}
 
 
@@ -377,14 +406,7 @@ int main()
 		}
 		*/
 
-		for (it = entities.begin(); it != entities.end(); it++) {
-			for(it2 = entities.begin(); it2 != entities.end(); it2++) {
-				if (((*it)->name == "Bullet") && ((*it2)->name == "EasyEnemy") && (*it)->getRect().intersects((*it2)->getRect())) {
-					(*it2)->dx = 0;
-					(*it2)->health = 0;
-				}
-			}
-		}
+
 		
 		for (it = entities.begin(); it != entities.end();)
 		{
@@ -394,6 +416,9 @@ int main()
 			else it++;
 		}
 		
+
+
+		bool TMPinCircle = 0;
 
 		for (it = entities.begin(); it != entities.end(); it++)//проходимся по эл-там списка
 		{
@@ -432,13 +457,25 @@ int main()
 				}
 			}
 			*/
+			
+			
 			for (it2 = entities.begin(); it2 != entities.end(); it2++) {
+				
 				if ((*it)->getRect() != (*it2)->getRect())//при этом это должны быть разные прямоугольники
 					if (((*it)->getRect().intersects((*it2)->getRect())) && ((*it)->name == "EasyEnemy") && ((*it2)->name == "EasyEnemy"))//если столкнулись два объекта и они враги
 					{
 						(*it)->dx *= -1;//меняем направление движения врага
 						(*it)->sprite.scale(-1, 1);//отражаем спрайт по горизонтали
 					}
+				if (((*it)->name == "Bullet") && ((*it2)->name == "EasyEnemy") && (*it)->getRect().intersects((*it2)->getRect())) {
+					(*it2)->dx = 0;
+					Image spiderBlood;
+					spiderBlood.loadFromFile("images\\spiderBlood.png");
+					spiderBlood.createMaskFromColor(Color(255, 255, 255));
+					(*it2)->texture.loadFromImage(spiderBlood);
+					(*it2)->sprite.setTexture((*it2)->texture);
+					(*it2)->health = 0;
+				}
 			}
 		}
 
@@ -497,3 +534,4 @@ int main()
 	}
 	return 0;
 }
+
