@@ -186,26 +186,27 @@ public:
 			}
 	}
 
-	float currentFrame = 0;
-	void beforeDying(float time) {
-		
-		while (currentFrame < 20) {
-			std::cout << currentFrame << std::endl;
-			if (currentFrame > 20) {
-				currentFrame -= 20;
-				break;
-			}
-			currentFrame += 0.1*time;
-			Image tmpImage;
-			tmpImage.loadFromFile("images\\spiderBlood.png");
-			Texture tmpTexture;
-			tmpTexture.loadFromImage(tmpImage);
-			Sprite tmpSprite;
-			tmpSprite.setTexture(tmpTexture);
-			tmpSprite.setPosition(x, y);
+	int die_counter = 0;
 
-		}
+	float currentFrame = 0;
+
+	bool blood_on = false;
+
+	int beforeDying(float time, int die_counter) {
+		std::cout << die_counter;
+		//currentFrame += 0.1*time;
+		Image tmpImage;
+		tmpImage.loadFromFile("images\\spiderBlood.png");
+		Texture tmpTexture;
+		tmpTexture.loadFromImage(tmpImage);
+		Sprite tmpSprite;
+		tmpSprite.setTexture(tmpTexture);
+		tmpSprite.setPosition(x, y);
+		if (die_counter==7) return -1;
+		return die_counter;
 	}
+
+
 
 	void update(float time)
 	{
@@ -215,10 +216,11 @@ public:
 			x += dx*time;
 			sprite.setPosition(x + w / 2, y + h / 2); //задаем позицию спрайта в место его центра
 			if (health <= 0) { 
+				blood_on = true;
 				dx = 0;
-				beforeDying(time);
-				life = false; 
-
+				beforeDying(time, die_counter);
+				die_counter++;
+				if (beforeDying(time, die_counter) == -1) life = false;
 			}
 		}
 	}
@@ -262,8 +264,10 @@ public:
 class Bullet :public Entity {//класс пули
 public:
 	int direction;//направление пули
-
+	float _x, _y;
 	Bullet(Image &image, String Name, Level &lvl, float X, float Y, int W, int H, int dir) :Entity(image, Name, X, Y, W, H) {
+		_x = X;
+		_y = Y;
 		x = X;
 		y = Y;
 		direction = dir;
@@ -275,21 +279,21 @@ public:
 
 	void update(float time)
 	{
-		switch (direction)
-		{
-		case 0: dx = -speed; dy = 0;   break;
-		case 1: dx = speed; dy = 0;   break;
-		case 2: dx = 0; dy = -speed;   break;
-		case 3: dx = 0; dy = -speed;   break;
-		case 4: dx = 0; dy = -speed;   break;
-		case 5: dx = 0; dy = -speed;   break;
+		
+		switch (direction) {
+			case 0: dx = -speed; dy = 0;   break;
+			case 1: dx = speed; dy = 0;   break;
+			case 2: dx = 0; dy = -speed;   break;
+			case 3: dx = 0; dy = -speed;   break;
+			case 4: dx = 0; dy = -speed;   break;
+			case 5: dx = 0; dy = -speed;   break;
 		}
 
 		x += dx*time;
 		y += dy*time;
 
-		//if (x <= 0) x = 1;
-		//if (y <= 0) y = 1;
+		if (abs((_x)-(x)) >= 250) life = false;
+		if (abs((_y)-(y)) >= 250) life = false;
 
 		sprite.setPosition(x + w / 2, y + h / 2);//задается позицию пуле
 	}
