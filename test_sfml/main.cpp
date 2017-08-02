@@ -55,23 +55,48 @@ public:
 		}
 	}
 
+	float getRotation(float rotation) {
+		return rotation;
+	}
+
+	int bulletDirection = 0;
+
 	float currentFrame = 0;
-	void control(float time) {
+	void controlWithRotation(float time, float rotation) {
 		if (Keyboard::isKeyPressed) {
 			if (Keyboard::isKeyPressed(Keyboard::Left)) {
-				state = left; speed = 0.1;
-				currentFrame += 0.01*time;
-				if (currentFrame > 6) currentFrame -= 6;
-				if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
-				else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
-				
+				if ((rotation < -90 && rotation > -180) || (rotation >= 90 && rotation <= 180)) {
+					bulletDirection = 0; state = left; speed = 0.1;
+					currentFrame += 0.01*time;
+					if (currentFrame > 6) currentFrame -= 6;
+					if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
+					else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
+
+				}
+				if ((rotation >= -90 && rotation <= 0) || (rotation > 0 && rotation < 90)) {
+					bulletDirection = 1; state = left; speed = 0.1;
+					currentFrame += 0.01*time;
+					if (currentFrame > 6) currentFrame -= 6;
+					sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
+				}
 				
 			}
+			
+
 			if (Keyboard::isKeyPressed(Keyboard::Right)) {
-				state = right; speed = 0.1;
-				currentFrame += 0.01*time;
-				if (currentFrame > 6) currentFrame -= 6;
-				sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
+				if ((rotation <= -90 && rotation > -180) || (rotation > 90 && rotation <= 180)) {
+					bulletDirection = 0; state = right; speed = 0.1;
+					currentFrame += 0.01*time;
+					if (currentFrame > 6) currentFrame -= 6;
+					if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
+					else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
+				}
+				if ((rotation > -90 && rotation <= 0) || (rotation > 0 && rotation <= 90)) {
+					bulletDirection = 1; state = right; speed = 0.1;
+					currentFrame += 0.01*time;
+					if (currentFrame > 6) currentFrame -= 6;
+					sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
+				}
 			}
 
 			if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
@@ -81,16 +106,16 @@ public:
 			if (Keyboard::isKeyPressed(Keyboard::Down)) {
 				state = down;
 			}
-			
+
 			if (Keyboard::isKeyPressed(Keyboard::Space)) {
 				isShoot = true;
 			}
+		}
 
+		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+			isShoot = true;
 		}
-		else {
-			state = stay;
-			sprite.setTextureRect(IntRect(172, 0, w, h));
-		}
+		
 	}
 
 	void checkCollisionWithMap(float Dx, float Dy)
@@ -108,15 +133,15 @@ public:
 		}
 		}*/
 
-		for (int i = 0; i<obj.size(); i++)//проходимся по объектам
+		for (int i = 0; i < obj.size(); i++)//проходимся по объектам
 			if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
 			{
 				if (obj[i].name == "solid")//если встретили препятствие
 				{
-					if (Dy>0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
-					if (Dy<0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
-					if (Dx>0) { x = obj[i].rect.left - w; }
-					if (Dx<0) { x = obj[i].rect.left + obj[i].rect.width; }
+					if (Dy > 0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
+					if (Dy < 0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
+					if (Dx > 0) { x = obj[i].rect.left - w; }
+					if (Dx < 0) { x = obj[i].rect.left + obj[i].rect.width; }
 				}
 			}
 	}
@@ -126,9 +151,13 @@ public:
 		return time;
 	}
 
-	void update(float time)
+	void update(float test) {
+
+	}
+
+	void updateWithRotation(float time, float rotation)
 	{
-		control(time);//функция управления персонажем
+		controlWithRotation(time, rotation);//функция управления персонажем
 		switch (state)//тут делаются различные действия в зависимости от состояния
 		{
 		case right:dx = speed; break;//состояние идти вправо
@@ -150,6 +179,45 @@ public:
 	}
 };
 
+class AnyObject {
+public:
+	std::vector<Object> obj;//вектор объектов карты
+	float dX, dY, dx, dy, x, y, speed, moveTimer;
+	int w, h, health;
+	bool life, isMove, onGround;
+	Texture texture;
+	Sprite sprite;
+	String name;
+
+	enum { left, right, up, down, jump, stay } state;
+
+	int playerScore;
+	bool isShoot;
+	AnyObject(Image &image, String Name, Level &lev, float X, float Y, int W, int H) {
+		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0;
+		speed = 0; health = 100; dx = 0; dy = 0;
+		life = true; onGround = false; isMove = false;
+		texture.loadFromImage(image);
+		sprite.setTexture(texture);
+		sprite.setTextureRect(IntRect(0, 0, w, h));
+	}
+
+	void update(float time, float px, float py, float rotation)
+	{	
+		if ((rotation < -90 && rotation >= -180) || (rotation > 90 && rotation <= 180)) {
+			x = px + 2.3;
+			y = py + 23;
+			sprite.setTextureRect(IntRect(0, 14, w, -h));
+		}
+		else {
+			x = px-4;
+			y = py + 11;
+			sprite.setTextureRect(IntRect(0, 0, w, h));
+		}
+		sprite.setPosition(x + w / 2, y + h / 2);
+		setPlayerCoordinateForView(x, y);
+	}
+};
 
 class Enemy :public Entity {
 public:
@@ -178,7 +246,8 @@ public:
 			if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
 			{
 				//if (obj[i].name == "solid"){//если встретили препятствие (объект с именем solid)
-				if (Dy>0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
+				if (Dy>0
+					) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
 				if (Dy<0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
 				if (Dx>0) { x = obj[i].rect.left - w;  dx = -0.1; sprite.scale(-1, 1); }
 				if (Dx<0) { x = obj[i].rect.left + obj[i].rect.width; dx = 0.1; sprite.scale(-1, 1); }
@@ -187,10 +256,6 @@ public:
 	}
 
 	int die_counter = 0;
-
-	float currentFrame = 0;
-
-	bool blood_on = false;
 
 	int beforeDying(float time, int die_counter) {
 		std::cout << die_counter;
@@ -202,11 +267,9 @@ public:
 		Sprite tmpSprite;
 		tmpSprite.setTexture(tmpTexture);
 		tmpSprite.setPosition(x, y);
-		if (die_counter==7) return -1;
+		if (die_counter==13) return -1;
 		return die_counter;
 	}
-
-
 
 	void update(float time)
 	{
@@ -216,7 +279,6 @@ public:
 			x += dx*time;
 			sprite.setPosition(x + w / 2, y + h / 2); //задаем позицию спрайта в место его центра
 			if (health <= 0) { 
-				blood_on = true;
 				dx = 0;
 				beforeDying(time, die_counter);
 				die_counter++;
@@ -225,10 +287,9 @@ public:
 		}
 	}
 
-	
-	
-
 };
+
+
 
 
 /////////////////////// КЛАСС ДВИЖУЩЕЙСЯ ПЛАТФОРМЫ //////////////////////////
@@ -250,6 +311,8 @@ public:
 
 
 
+
+
 //class MENU {
 //public:
 //	Sprite sprite;
@@ -257,6 +320,8 @@ public:
 //		sprite.setTextureRect(IntRect(0, 0, W, H));//прямоугольник
 //	}
 //};
+
+
 
 
 
@@ -275,8 +340,6 @@ public:
 		w = h = 50;
 		life = true;
 	}
-
-
 	void update(float time)
 	{
 		
@@ -323,10 +386,18 @@ int main()
 	heroImage.loadFromFile("images\\player.png");
 	heroImage.createMaskFromColor(Color(0, 0, 0));
 
-
 	Image easyEnemyImage;
 	easyEnemyImage.loadFromFile("images\\spider.png");
 	easyEnemyImage.createMaskFromColor(Color(255, 255, 255));//маску по цвету
+
+
+
+	Image heroImageHand;
+	heroImageHand.loadFromFile("images\\playerHand.png");
+	heroImageHand.createMaskFromColor(Color(255, 255, 255));
+
+	Object playerHand = lvl.GetObject("playerHand");
+	AnyObject p_h(heroImageHand, "playerHand", lvl, playerHand.rect.left, playerHand.rect.top, 33, 14);
 
 
 	Object player = lvl.GetObject("player");//объект игрока на нашей карте.задаем координаты игроку в начале при помощи него
@@ -373,9 +444,21 @@ int main()
 	//MENU mainMenu(menuButtonsImage, 300, 200, 150, 50, "playButton");
 
 
+	float dX, dY = 0;
+
 	while (window.isOpen())
 	{
 
+		Vector2i pixelPos = Mouse::getPosition(window);//забираем коорд курсора
+		Vector2f pos = window.mapPixelToCoords(pixelPos);//переводим их в игровые (уходим от коорд окна)
+
+		float dX = pos.x - p_h.x;//вектор , колинеарный прямой, которая пересекает спрайт и курсор
+		float dY = pos.y - p_h.y;//он же, координата y
+		float rotation = (atan2(dY, dX)) * 180 / 3.14159265;//получаем угол в радианах и переводим его в градусы
+		std::cout << rotation << "\n";//смотрим на градусы в консольке
+		p_h.sprite.setRotation(rotation);//поворачиваем спрайт на эти градусы
+
+		
 		float time = clock.getElapsedTime().asMicroseconds();
 
 		clock.restart();
@@ -392,16 +475,20 @@ int main()
 		}
 		*/
 
+
+
 		Event event;
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();						
-			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.state)); }//если выстрелили, то появляется пуля
+			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.bulletDirection)); }//если выстрелили, то появляется пуля
 		}
 			
 
-		p.update(time);// Player update function	
+		p.updateWithRotation(time, rotation);// Player update function	
+
+		p_h.update(time, p.x, p.y, rotation);
 		
 
 		/*
@@ -421,8 +508,6 @@ int main()
 		}
 		
 
-
-		bool TMPinCircle = 0;
 
 		for (it = entities.begin(); it != entities.end(); it++)//проходимся по эл-там списка
 		{
@@ -500,7 +585,7 @@ int main()
 						}
 						*/
 
-	
+
 
 		//movePlatform.update(time);
 		//easyEnemy.update(time);//easyEnemy update function
@@ -532,7 +617,10 @@ int main()
 			window.draw((*it)->sprite); //рисуем всех врагов которые находятся в списке
 		}
 
+
+		
 		window.draw(p.sprite);
+		window.draw(p_h.sprite);
 		//window.draw(movePlatform.sprite);
 		window.display();
 	}
