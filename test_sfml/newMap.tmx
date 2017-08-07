@@ -1647,7 +1647,7 @@
   <object id="97" name="EasyEnemy" x="544.636" y="696.485" width="80" height="38"/>
   <object id="103" name="EasyEnemy" x="672.97" y="694.939" width="80" height="38"/>
   <object id="104" name="EasyEnemy" x="410.515" y="696.212" width="80" height="38"/>
-  <object id="105" name="playerHand" x="590.303" y="461.485" width="33" height="10"/>
+  <object id="105" name="playerHand" x="590.303" y="461.485" width="33" height="14"/>
   <object id="106" name="solid" x="254.621" y="560.712" width="31" height="13"/>
   <object id="107" name="solid" x="39" y="777.667" width="796" height="6.66667"/>
  </objectgroup>

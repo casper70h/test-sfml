@@ -8,6 +8,7 @@
 #include "level.h"
 #include <vector>
 #include <list>
+#include <math.h>
 #include "TinyXML/tinyxml.h"
 
 using namespace sf;
@@ -41,6 +42,8 @@ public:
 	}
 
 	virtual void update(float time) = 0; //все потомки переопределяют эту функцию
+
+	virtual void updateWithDirection(float time, float dX, float dY) = 0;
 };
 ////////////////////////////////////////////////////КЛАСС ИГРОКА////////////////////////
 class Player :public Entity {
@@ -63,53 +66,47 @@ public:
 
 	float currentFrame = 0;
 	void controlWithRotation(float time, float rotation) {
-		if (Keyboard::isKeyPressed) {
-			if (Keyboard::isKeyPressed(Keyboard::Left)) {
-				if ((rotation < -90 && rotation > -180) || (rotation >= 90 && rotation <= 180)) {
-					bulletDirection = 0; state = left; speed = 0.1;
-					currentFrame += 0.01*time;
-					if (currentFrame > 6) currentFrame -= 6;
-					if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
-					else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
+		if (Keyboard::isKeyPressed(Keyboard::A)) {
+			if ((rotation < -90 && rotation > -180) || (rotation >= 90 && rotation <= 180)) {
+				bulletDirection = 0; state = left; speed = 0.1;
+				currentFrame += 0.01*time;
+				if (currentFrame > 6) currentFrame -= 6;
+				if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
+				else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
 
-				}
-				if ((rotation >= -90 && rotation <= 0) || (rotation > 0 && rotation < 90)) {
-					bulletDirection = 1; state = left; speed = 0.1;
-					currentFrame += 0.01*time;
-					if (currentFrame > 6) currentFrame -= 6;
-					sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
-				}
-				
 			}
+			if ((rotation >= -90 && rotation <= 0) || (rotation > 0 && rotation < 90)) {
+				bulletDirection = 1; state = left; speed = 0.1;
+				currentFrame += 0.01*time;
+				if (currentFrame > 6) currentFrame -= 6;
+				sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
+			}
+				
+		}
 			
 
-			if (Keyboard::isKeyPressed(Keyboard::Right)) {
-				if ((rotation <= -90 && rotation > -180) || (rotation > 90 && rotation <= 180)) {
-					bulletDirection = 0; state = right; speed = 0.1;
-					currentFrame += 0.01*time;
-					if (currentFrame > 6) currentFrame -= 6;
-					if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
-					else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
-				}
-				if ((rotation > -90 && rotation <= 0) || (rotation > 0 && rotation <= 90)) {
-					bulletDirection = 1; state = right; speed = 0.1;
-					currentFrame += 0.01*time;
-					if (currentFrame > 6) currentFrame -= 6;
-					sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
-				}
+		if (Keyboard::isKeyPressed(Keyboard::D)) {
+			if ((rotation <= -90 && rotation > -180) || (rotation > 90 && rotation <= 180)) {
+				bulletDirection = 0; state = right; speed = 0.1;
+				currentFrame += 0.01*time;
+				if (currentFrame > 6) currentFrame -= 6;
+				if (int(currentFrame) == 6) sprite.setTextureRect(IntRect(199, 0, -w, h));
+				else sprite.setTextureRect(IntRect(29 * int(currentFrame) + 29, 0, -w, h));
 			}
+			if ((rotation > -90 && rotation <= 0) || (rotation > 0 && rotation <= 90)) {
+				bulletDirection = 1; state = right; speed = 0.1;
+				currentFrame += 0.01*time;
+				if (currentFrame > 6) currentFrame -= 6;
+				sprite.setTextureRect(IntRect(29 * int(currentFrame), 0, w, h));
+			}
+		}
 
-			if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
-				state = jump; dy = -0.6; onGround = false;//увеличил высоту прыжка
-			}
+		if ((Keyboard::isKeyPressed(Keyboard::W)) && (onGround)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
+			state = jump; dy = -0.6; onGround = false;//увеличил высоту прыжка
+		}
 
-			if (Keyboard::isKeyPressed(Keyboard::Down)) {
-				state = down;
-			}
-
-			if (Keyboard::isKeyPressed(Keyboard::Space)) {
-				isShoot = true;
-			}
+		if (Keyboard::isKeyPressed(Keyboard::S)) {
+			state = down;
 		}
 
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
@@ -154,6 +151,8 @@ public:
 	void update(float test) {
 
 	}
+
+	void updateWithDirection(float, float, float) {}
 
 	void updateWithRotation(float time, float rotation)
 	{
@@ -215,7 +214,7 @@ public:
 			sprite.setTextureRect(IntRect(0, 0, w, h));
 		}
 		sprite.setPosition(x + w / 2, y + h / 2);
-		setPlayerCoordinateForView(x, y);
+		
 	}
 };
 
@@ -226,6 +225,8 @@ public:
 		sprite.setTextureRect(IntRect(0, 0, w, h));
 		dx = 0.1;//даем скорость.этот объект всегда двигается
 	}
+
+	void updateWithDirection(float time, float dX, float dY) {}
 
 	void checkCollisionWithMap(float Dx, float Dy)
 	{
@@ -300,6 +301,9 @@ public:
 		dx = 0.08;//изначальное ускорение по Х
 	}
 
+	void updateWithRotation(float time, float rotation) {}
+	void updateWithDirection(float time, float dX, float dY) {}
+	
 	void update(float time)//функция обновления платформы.
 	{
 		x += dx * time;//реализация движения по горизонтали
@@ -336,29 +340,75 @@ public:
 		x = X;
 		y = Y;
 		direction = dir;
-		speed = 0.8;
+		speed = 1;
 		w = h = 50;
 		life = true;
 	}
-	void update(float time)
+
+	void update(float time) {}
+
+
+
+	void updateWithDirection(float time, float dX, float dY)
 	{
-		
+		std::cout << "	x = " << x << "		y= " << y << std::endl;
+
+		if ((((atan2(dY,dX)) * 180 / 3.14159265)>=-90 && ((atan2(dY, dX)) * 180 / 3.14159265) < 0) && (((atan(dY / dX)) * 180 / 3.14159265) >= -90 && ((atan(dY / dX)) * 180 / 3.14159265) < 0) ) {
+			dx = speed;
+			dy = 0;
+			x += dx*time - ((atan(dY / dX)) * 180 / 3.14159265); //cos(float(atan(float(dY / dX))))
+			y += dy*time + ((atan(dY / dX)) * 180 / 3.14159265);
+			sprite.setPosition(x + (w / 2) + 4, y + (h / 2) - 11); //задается позицию пуле   
+		}
+		else if ((((atan2(dY, dX)) * 180 / 3.14159265) <= -90 && ((atan2(dY, dX)) * 180 / 3.14159265) >= -180) && ( atan(dY/dX)*180/3.14159265<=90 && atan(dY / dX) * 180 / 3.14159265 > 0)) {
+			dx = -speed;
+			dy = 0;
+			x += dx*time - ((atan(dY/ dX)) * 180 / 3.14159265);
+			y += dy*time - ((atan(dY/ dX)) * 180 / 3.14159265);
+			sprite.setPosition(x + (w / 2) - 2.3, y + (h / 2) - 23);
+		}
+		else if (((atan2(dY, dX) * 180 / 3.14159265) <= 180) && ((atan2(dY, dX) * 180 / 3.14159265) > 90) && (atan(dY / dX) * 180 / 3.14159265<0) && (atan(dY / dX) * 180 / 3.14159265 >= -90)) {
+			dx = -speed;
+			dy = 0;
+			x += dx*time + ((atan(dY / dX)) * 180 / 3.14159265);
+			y += dy*time - ((atan(dY / dX)) * 180 / 3.14159265);
+			sprite.setPosition(x + (w / 2) - 2.3, y + (h / 2) - 23);
+		}
+		else if ((((atan2(dY, dX)) * 180 / 3.14159265)>=0 && ((atan2(dY, dX)) * 180 / 3.14159265) <=90) && ((atan(dY / dX) * 180 / 3.14159265 <= 90 && atan(dY / dX) * 180 / 3.14159265 > 0))) {
+			dx = speed;
+			dy = 0;
+			x += dx*time + (atan(dY/ dX)) * 180 / 3.14159265; //cos(float(atan(float(dY / dX))))
+			y += dy*time + (atan(dY/ dX)) * 180 / 3.14159265;
+			sprite.setPosition(x + (w / 2) + 4, y + (h / 2) - 11); //задается позицию пуле   
+		}
+		/*
 		switch (direction) {
-			case 0: dx = -speed; dy = 0;   break;
-			case 1: dx = speed; dy = 0;   break;
+			case 0: 
+				dx = speed; 
+
+				x += dx*time + (atan2(dY, dX)) * 180 / 3.14159265; //cos(float(atan(float(dY / dX))))
+				y += dy*time + (atan2(dY, dX)) * 180 / 3.14159265;
+				sprite.setPosition(x + (w / 2)-2.3, y + (h / 2) -23); //задается позицию пуле   
+				break;
+			case 1: 
+				dx = speed; 
+	 
+				x += dx*time - (atan2(dY, dX)) * 180 / 3.14159265; //cos(float(atan(float(dY / dX))))
+				y += dy*time + (atan2(dY, dX)) * 180 / 3.14159265;
+				sprite.setPosition(x + (w / 2) + 4, y + (h / 2) - 11); //задается позицию пуле 
+				break;
 			case 2: dx = 0; dy = -speed;   break;
 			case 3: dx = 0; dy = -speed;   break;
 			case 4: dx = 0; dy = -speed;   break;
 			case 5: dx = 0; dy = -speed;   break;
 		}
+		*/
+		
+		//оганичения в расстоянии полета пули
+			if (abs((_x)-(x)) >= 250) life = false;
+			if (abs((_y)-(y)) >= 250) life = false;
 
-		x += dx*time;
-		y += dy*time;
 
-		if (abs((_x)-(x)) >= 250) life = false;
-		if (abs((_y)-(y)) >= 250) life = false;
-
-		sprite.setPosition(x + w / 2, y + h / 2);//задается позицию пуле
 	}
 };
 
@@ -455,10 +505,12 @@ int main()
 		float dX = pos.x - p_h.x;//вектор , колинеарный прямой, которая пересекает спрайт и курсор
 		float dY = pos.y - p_h.y;//он же, координата y
 		float rotation = (atan2(dY, dX)) * 180 / 3.14159265;//получаем угол в радианах и переводим его в градусы
-		std::cout << rotation << "\n";//смотрим на градусы в консольке
+		//std::cout << "dX= " << dX << "		dY= " << dY << "\n";//смотрим на градусы в консольке
+		std::cout << "		угол = " << (atan2(dY, dX)) * 180 / 3.14159265 << std::endl;
 		p_h.sprite.setRotation(rotation);//поворачиваем спрайт на эти градусы
 
 		
+
 		float time = clock.getElapsedTime().asMicroseconds();
 
 		clock.restart();
@@ -482,7 +534,7 @@ int main()
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();						
-			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p.x, p.y, 16, 16, p.bulletDirection)); }//если выстрелили, то появляется пуля
+			if (p.isShoot == true) { p.isShoot = false; entities.push_back(new Bullet(BulletImage, "Bullet",lvl, p_h.x, p_h.y, 16, 16, p.bulletDirection)); }//если выстрелили, то появляется пуля
 		}
 			
 
@@ -502,7 +554,8 @@ int main()
 		for (it = entities.begin(); it != entities.end();)
 		{
 			Entity *b = *it;
-			b->update(time);  //for (it = entities.begin(); it != entities.end(); it++) {(*it)->update(time); // вызываем функ. update для всех эл. списка
+			if (b->name == "Bullet") b->updateWithDirection(time, dX, dY);
+			else b->update(time);  //for (it = entities.begin(); it != entities.end(); it++) {(*it)->update(time); // вызываем функ. update для всех эл. списка
 			if (b->life == false) { it = entities.erase(it); delete b; }
 			else it++;
 		}
